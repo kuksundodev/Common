@@ -90,13 +90,15 @@ const
   RET_SET_OK = 'ok';
   RET_SET_ELEMENT_NOT_FOUND = 'element_not_found';
   RET_SET_FRAME_NOT_FOUND = 'frame_not_found';
+
   GET_VALUE_ID = 100;
   GET_INNERTEXT_ID = 101;
   GET_MULTIPLE_VALUES_ID = 102;
   GET_MULTIPLE_INNERTEXT_ID = 103;
-  SET_VALUE_ID = 104;
+  SET_VALUE_FROM_btn_FindClick = 104;
   GET_IFRAME_HTML_ID = 105;
   GET_MULTI_INNERTEXT_IN_IFRAME_ID = 106;
+  SET_VALUE_ID = 107;
   GET_MULTI_VALUE_IN_IFRAME_ID = 108;
   HAS_IFRAME_ID = 109;
   SYNC_IFRAME_NAMENID_ID = 110;
@@ -113,6 +115,15 @@ const
   LOG_ENTRYADDED_EVENT = 206;
   CLICK_INPUT_EVENT_ID = 207;
   GET_RECT_EVENT_ID = 208;
+
+  SET_VALUE_ID_Grid_CMListDblClick = 209; //unCMDateList.TfDlgCMDateList.Grid_CMListDblClick
+  SET_VALUE_ID_btn_CheckDateClick = 210;  //unCMDateList.TfDlgCMDateList.btn_CheckDateClick
+  GET_EDATE_VALUE_ID_Grid_CMListDblClick = 211; //unCMDateList.TfDlgCMDateList.Grid_CMListDblClick
+  GET_EDATE_VALUE_ID_btn_CheckDateClick = 212;  //unCMDateList.TfDlgCMDateList.btn_CheckDateClick
+  CLICK_ID_Grid_CMListDblClick = 213;       //unCMClientMain.TfCMClientMain.btn_FindClick
+  CLICK_ID_btn_CheckDateClick = 214;
+  GET_CARID_VALUE_ID_btn_CheckDateClick = 215;  //unCMDateList.TfDlgCMDateList.btn_CheckDateClick
+
   //++                    ;
 type
   TWebView4DUtil = class
@@ -132,7 +143,7 @@ type
     //입력받은 ID 목록(aElementIDs)을 JavaScript 배열로 변환
     //JavaScript 내에서 해당 ID들을 순회하며 element.innerText를 가져와 ;로 연결
     //console.log를 사용하여 GETMULTIPLEVALUES: 프리앰블과 함께 인코딩된 결과 문자열을 출력하는 스크립트를 실행
-    class procedure GetMultipleElementInnerTextByIDAry(const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const aElementIDs: TArray<string>); static;
+    class procedure GetMultipleElementInnerTextByIDAry(const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const aElementIDs: TArray<string>; const AExecID: integer); static;
     class procedure GetMultipleElementValueOrInnerTextByIDAry(const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const aElementIDs: TArray<string>); static;
 
     class function GetElementInnerTextByIDFromBrowserSync(const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const aElementID: string): string; static;
@@ -143,7 +154,7 @@ type
     //ID를 찾아 해당 요소가 value 속성을 지원하면 value에, 그렇지 않으면 innerText에 값을 할당
     //<input>, <textarea>, <select> 등은 value 속성
     //<div>, <span>, <p> 등은 innerText 속성에 값을 할당
-    class procedure SetElementValueById(ABrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const AId, AValue: string); static;
+    class procedure SetElementValueById(ABrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const AId, AValue: string; const AKind: Integer); static;
     //주로 <input>, <select> 등 폼(Form) 요소에서 많이 사용
     {Ex:
       // Name이 'email'인 모든 입력창의 값을 변경
@@ -165,7 +176,7 @@ type
       ClickElement(WVBrowser1, 'input#agree-term');
       // 로그인 버튼 클릭
       ClickElement(WVBrowser1, '.btn-submit-login');      }
-    class procedure ClickElementByQrySelector(ABrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const ASelector: string); static;
+    class procedure ClickElementByQrySelector(ABrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const ASelector: string; const AExecID: integer); static;
     //드롭다운은 <select> 태그 내의 특정 <option>을 선택하는 방식임.
     //값을 변경한 후 반드시 change 이벤트를 발생시켜야 브라우저가 변경 사항을 저장함.
     {EX:
@@ -203,8 +214,8 @@ type
     //특정 Frame 내 복수 ID의 Value 요청 함수
     class procedure GetMultipleElementValueByIFrameId(const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const AFrameId: string; const aElementIDs: TArray<string>); static;
 
-    class procedure SetElementValueFromIFrameList(ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>; const AElementSelector, AValue: string); static;
-    class procedure ClickElementByQrySelectorFromIFrameList(ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>; const ASelector: string; const AFrameIdx: integer=-1); static;
+    class procedure SetElementValueFromIFrameList(ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>; const AElementSelector, AValue: string; const AKind: Integer); static;
+    class procedure ClickElementByQrySelectorFromIFrameList(ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>; const ASelector: string; const AFrameIdx, AExecID: integer); static;
     class procedure ClickElementFromBrowser(ABrowser: TWVBrowser; const ASelector: string; const AByID: Boolean = True); static;
     class procedure ClickElementByQrySelectorFromIFrame(ABrowser: TWVBrowser; const AIFrameId, ASelector: string); static;
     class procedure ClickInputByIdFromIFrameList(ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>; const ASelector: string; const AFrameIdx: integer=-1); static;
@@ -576,7 +587,7 @@ begin
 end;
 
 class procedure TWebView4DUtil.ClickElementByQrySelector(ABrowser: TWVBrowser;
-  AFrame: TCoreWebView2Frame; const ASelector: string);
+  AFrame: TCoreWebView2Frame; const ASelector: string; const AExecID: integer);
 var
   JSCode: string;
 begin
@@ -610,7 +621,7 @@ begin
        '                                                                                      ' +
        ' })();                                                                                ' ;
 
-  AFrame.ExecuteScript(JSCode, CLICK_ELEMENT_EVENT_ID, ABrowser);
+  AFrame.ExecuteScript(JSCode, AExecID, ABrowser);  //CLICK_ELEMENT_EVENT_ID
 //  ABrowser.ExecuteScript(Script, CLICK_ELEMENT_EVENT_ID);
 end;
 
@@ -622,20 +633,20 @@ end;
 
 class procedure TWebView4DUtil.ClickElementByQrySelectorFromIFrameList(
   ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>;
-  const ASelector: string; const AFrameIdx: integer);
+  const ASelector: string; const AFrameIdx, AExecID: integer);
 var
   i: integer;
 begin
   if AFrameIdx > -1 then
   begin
     if AFrameIdx < AFrameList.Count then
-      TWebView4DUtil.ClickElementByQrySelector(ABrowser, AFrameList[AFrameIdx], ASelector)
+      TWebView4DUtil.ClickElementByQrySelector(ABrowser, AFrameList[AFrameIdx], ASelector, AExecID)
   end
   else
   begin
     for i := 0 to AFrameList.Count - 1 do
     begin
-      TWebView4DUtil.ClickElementByQrySelector(ABrowser, AFrameList[i], ASelector);
+      TWebView4DUtil.ClickElementByQrySelector(ABrowser, AFrameList[i], ASelector, AExecID);
     end;
   end;
 end;
@@ -676,7 +687,8 @@ Result := AJson;
 end;
 
 class procedure TWebView4DUtil.GetMultipleElementInnerTextByIDAry(
-  const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const aElementIDs: TArray<string>);
+  const AWVBrowser: TWVBrowser; AFrame: TCoreWebView2Frame; const aElementIDs: TArray<string>;
+  const AExecID: integer);
 var
   IdListJson, Script: string;
   I: Integer;
@@ -706,7 +718,7 @@ begin
 //    '    return el ? el.innerText.trim() : "";' +
     '  }).join(";");' +
     '})(' + IdListJson + ');';
-  AFrame.ExecuteScript(Script, GET_MULTI_INNERTEXT_IN_IFRAME_ID, AWVBrowser);
+  AFrame.ExecuteScript(Script, AExecID, AWVBrowser);//GET_MULTI_INNERTEXT_IN_IFRAME_ID
 //  AWVBrowser.ExecuteScript(Script, GET_MULTIPLE_INNERTEXT_ID);
 end;
 
@@ -1112,7 +1124,7 @@ begin
 end;
 
 class procedure TWebView4DUtil.SetElementValueById(ABrowser: TWVBrowser; AFrame: TCoreWebView2Frame;
-  const AId, AValue: string);
+  const AId, AValue: string; const AKind: Integer);
 var
   Script: string;
 begin
@@ -1131,7 +1143,7 @@ begin
     [QuotedStr(AId), QuotedStr(AValue), QuotedStr(AValue)]
   );
   // 스크립트 실행
-  AFrame.ExecuteScript(Script, SET_VALUE_ID, ABrowser);
+  AFrame.ExecuteScript(Script, AKind, ABrowser); //SET_VALUE_ID
 //  ABrowser.ExecuteScript(Script, SET_VALUE_ID);
 end;
 
@@ -1180,13 +1192,13 @@ end;
 
 class procedure TWebView4DUtil.SetElementValueFromIFrameList(
   ABrowser: TWVBrowser; AFrameList: TObjectList<TCoreWebView2Frame>;
-  const AElementSelector, AValue: string);
+  const AElementSelector, AValue: string; const AKind: Integer);
 var
   i: integer;
 begin
   for i := 0 to AFrameList.Count - 1 do
   begin
-    TWebView4DUtil.SetElementValueById(ABrowser, AFrameList[i], AElementSelector, AValue);
+    TWebView4DUtil.SetElementValueById(ABrowser, AFrameList[i], AElementSelector, AValue, AKind);
   end;
 end;
 
