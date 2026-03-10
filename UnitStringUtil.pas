@@ -3,7 +3,7 @@ unit UnitStringUtil;
 interface
 
 uses Windows, sysutils, classes, Vcl.Forms, shellapi, Vcl.Graphics, math, MMSystem, system.Character,
-    JclStringConversions, TlHelp32, StrUtils, Comobj;
+    TlHelp32, StrUtils, Comobj; //JclStringConversions,
 
 const
   OneKB = 1024;
