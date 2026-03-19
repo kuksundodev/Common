@@ -9,6 +9,7 @@ const
 
 function ExtractTextBetweenTags(const htmlContent: string): TStringList;
 function CheckIfExistHangulUsingRegEx(const AText: string): Boolean;
+function RemoveKorean(const AText: string): string;
 
 implementation
 
@@ -37,6 +38,13 @@ end;
 function CheckIfExistHangulUsingRegEx(const AText: string): Boolean;
 begin
   Result := TRegEx.IsMatch(AText, REGEX_HANGLE);
+end;
+
+function RemoveKorean(const AText: string): string;
+begin
+  // [°¡-ÆR] ÆÐÅÏÀ» Ã£¾Æ ºó ¹®ÀÚ¿­('')·Î Ä¡È¯
+  // TRegEx.Replace(´ë»ó¹®ÀÚ¿­, ÆÐÅÏ, Ä¡È¯¹®ÀÚ¿­)
+  Result := TRegEx.Replace(AText, '[°¡-ÆR]', '');
 end;
 
 end.

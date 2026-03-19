@@ -26,7 +26,11 @@ type
   TOrmUtil = class
     class procedure AddOrUpdateOrm<T:TOrm>(const AOrm: T; const AIsUpdate: Boolean; ADB: TRestClientDB); static;
     class procedure AssignRecordToOrm<T: record>(const ARec: T; AOrm: TOrm); static;
+    //mORMot2 native RTTI 방식
+    //**TOrmProps와 TOrmPropInfo**를 이용해 이미 생성된 ORM 메타데이터를 사용
     class procedure AssignRecordToOrmNative<T: record>(AOrm: TOrm; const ARec: T); static;
+
+    class procedure AssignOrmToRecordNative<T: record>(AOrm: TOrm; var ARec: T); static;
   end;
 
 implementation
@@ -47,6 +51,47 @@ begin
   begin
     ADB.Add(AOrm, true);
   end;
+end;
+
+class procedure TOrmUtil.AssignOrmToRecordNative<T>(AOrm: TOrm; var ARec: T);
+var
+  props: TOrmProperties;
+  prop: TOrmPropInfo;
+  ctx: TRttiContext;
+  recType: TRttiType;
+  field: TRttiField;
+  recValue: TValue;
+  v: TValue;
+  i: Integer;
+begin
+  props := AOrm.OrmProps;
+
+  ctx := TRttiContext.Create;
+  recType := ctx.GetType(TypeInfo(T));
+
+  recValue := TValue.From<T>(ARec);
+
+  for i := 0 to props.Fields.Count - 1 do
+  begin
+    prop := props.Fields.List[i];
+
+    // PK skip
+    if prop.Name = 'ID' then
+      Continue;
+
+    field := recType.GetField(String(prop.Name));
+    if field = nil then
+      Continue;
+
+    // ORM property → TValue
+    v := prop.GetValue(AOrm, True);
+
+    // record field에 값 할당
+    field.SetValue(recValue.GetReferenceToRawData, v);
+  end;
+
+  // record 반영
+  ARec := recValue.AsType<T>;
 end;
 
 class procedure TOrmUtil.AssignRecordToOrm<T>(const ARec: T; AOrm: TOrm);
@@ -114,6 +159,7 @@ begin
       Continue;
 
     field := recType.GetField(String(prop.Name));
+
     if field = nil then
       Continue;
 

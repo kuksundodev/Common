@@ -128,9 +128,9 @@ class procedure TJHPIniConfigBase.LoadConfig2Form(AForm: TForm; ASettings: TObje
 var
   ctx, ctx2 : TRttiContext;
   objType, objType2 : TRttiType;
-  Prop, Prop2  : TRttiProperty;
-  Value : TValue;
-  IniValue : JHPIniAttribute;
+  Prop, IniProp  : TRttiProperty;
+  IniValue, ConvertedValue: TValue;
+  IniAttr : JHPIniAttribute;
 //  Data : String;
   LControl: TControl;
 
@@ -179,25 +179,27 @@ begin
           LCompName := LControl.Name;
         end;
 
-        for Prop2 in objType2.GetProperties do
+        for IniProp in objType2.GetProperties do
         begin
-          IniValue := TJHPIniPersist.GetIniAttribute(Prop2);
+          IniAttr := TJHPIniPersist.GetIniAttribute(IniProp);
 
-          if Assigned(IniValue) then
+          if Assigned(IniAttr) then
           begin
             if AIsUseTag then
-              LIsSetValue := StrToIntDef(IniValue.TagNoOrCompName,0) = LTagNo
+              LIsSetValue := StrToIntDef(IniAttr.TagNoOrCompName,0) = LTagNo
             else
-              LIsSetValue := IniValue.TagNoOrCompName = LCompName;
+              LIsSetValue := IniAttr.TagNoOrCompName = LCompName;
 
             if LIsSetValue then
             begin
-              Value := Prop2.GetValue(ASettings);
-//              Data := TIniPersist.GetValue(Value);
+              IniValue := IniProp.GetValue(ASettings);
+              ConvertedValue := TJHPIniPersist.ConvertValueFromTypeKind(IniValue, Prop.PropertyType.TypeKind);
+//              ConvertedValue := CastTValueByKind(IniValue, Prop.PropertyType.TypeKind);
+
               if LControl.ClassType = TAdvGroupBox then
-                Prop.SetValue(TAdvGroupBox(LControl).CheckBox, Value)
+                Prop.SetValue(TAdvGroupBox(LControl).CheckBox, ConvertedValue)
               else
-                Prop.SetValue(LControl, Value);
+                Prop.SetValue(LControl, ConvertedValue);
               break;
             end;
           end;
@@ -214,9 +216,9 @@ class procedure TJHPIniConfigBase.LoadConfigForm2Object(AForm: TForm; ASettings:
 var
   ctx, ctx2 : TRttiContext;
   objType, objType2 : TRttiType;
-  Prop, Prop2  : TRttiProperty;
-  Value : TValue;
-  IniValue : JHPIniAttribute;
+  Prop, IniProp  : TRttiProperty;
+  CompValue, ConvertedValue : TValue;
+  IniAttr : JHPIniAttribute;
   Data, LCompName : String;
   LControl: TControl;
 
@@ -265,28 +267,29 @@ begin
           LCompName := LControl.Name;
         end;
 
-        for Prop2 in objType2.GetProperties do
+        for IniProp in objType2.GetProperties do
         begin
-          if Prop2.Name = '' then
+          if IniProp.Name = '' then
             exit;
 
-          IniValue := GetIniAttribute(Prop2);
+          IniAttr := GetIniAttribute(IniProp);
 
-          if Assigned(IniValue) then
+          if Assigned(IniAttr) then
           begin
             if AIsUseTag then
-              LIsSetValue := StrToIntDef(IniValue.TagNoOrCompName,0) = LTagNo
+              LIsSetValue := StrToIntDef(IniAttr.TagNoOrCompName,0) = LTagNo
             else
-              LIsSetValue := IniValue.TagNoOrCompName = LCompName;
+              LIsSetValue := IniAttr.TagNoOrCompName = LCompName;
 
             if LIsSetValue then
             begin
               if LControl.ClassType = TAdvGroupBox then
-                Value := Prop.GetValue(TAdvGroupBox(LControl).CheckBox)
+                CompValue := Prop.GetValue(TAdvGroupBox(LControl).CheckBox)
               else
-                Value := Prop.GetValue(LControl);
+                CompValue := Prop.GetValue(LControl);
 
-              Prop2.SetValue(ASettings, Value);
+              ConvertedValue := TJHPIniPersist.ConvertValueFromTypeKind(CompValue, IniProp.PropertyType.TypeKind);
+              IniProp.SetValue(ASettings, ConvertedValue);
               break;
             end;
           end;

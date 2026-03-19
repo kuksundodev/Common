@@ -14,6 +14,8 @@ procedure SetStaticIP(const AdapterName, IPAddress, SubnetMask, Gateway: string)
 procedure SetDHCP(const AdapterName: string);
 procedure OpenNetworkConnectionsUsingCPL();
 
+function IsValidIPv4(const S: AnsiString): Boolean;
+
 implementation
 
 function IPAddr2Long(AIpAddr: string): UInt32;
@@ -78,6 +80,14 @@ begin
     'rundll32.exe',
     'shell32.dll,Control_RunDLL ncpa.cpl',
     nil, SW_SHOWNORMAL);
+end;
+
+function IsValidIPv4(const S: AnsiString): Boolean;
+var
+  Addr: u_long;
+begin
+  Addr := inet_addr(PAnsiChar(AnsiString(S)));
+  Result := Addr <> INADDR_NONE;
 end;
 
 end.

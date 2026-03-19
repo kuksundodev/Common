@@ -7,11 +7,26 @@ uses System.SysUtils, System.Classes, System.JSON;
 type
   TJsonUtil = class
     class function GetTJSONArrayFromJsonObjStr(const AJsonObj: string; out AJsonAry: TJSONArray): string;
+    class function GetTJSONArrayFromJsonAryStr(const AJsonAry: string): TJSONArray;
   end;
 
 implementation
 
 { TJsonUtil }
+
+class function TJsonUtil.GetTJSONArrayFromJsonAryStr(
+  const AJsonAry: string): TJSONArray;
+var
+  JSONValue: TJSONValue;
+begin
+  Result := nil;
+
+  JSONValue := TJSONObject.ParseJSONValue(AJsonAry);
+  if JSONValue is TJSONArray then
+    Result := JSONValue as TJSONArray
+  else
+    JSONValue.Free;
+end;
 
 class function TJsonUtil.GetTJSONArrayFromJsonObjStr(
   const AJsonObj: string; out AJsonAry: TJSONArray): string;
