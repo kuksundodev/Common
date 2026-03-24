@@ -9,7 +9,7 @@ function GetLocalIP(AIndex: integer = -1; AStrings: TStrings=nil) : string;
 function GetLocalIPFromDesignated(ADesignatedIP: string) : string;
 function GetLocalIPList : TStringList;
 function GetLocalIPListUsingIndy : TStrings;
-procedure RetrieveLocalAdapterInformation(strings: TStrings);
+//procedure RetrieveLocalAdapterInformation(strings: TStrings);
 function CheckTCP_PortOpen(ipAddressStr: Ansistring; dwPort: Word): Boolean;
 function IsPortActive(AHost : string; APort : Word): boolean;
 
@@ -140,68 +140,68 @@ begin
   end;
 end;
 
-procedure RetrieveLocalAdapterInformation(strings: TStrings);
-var
-  pAdapterInfo, pTempAdapterInfo: PIP_ADAPTER_INFO;
-  AdapterInfo: IP_ADAPTER_INFO;
-  BufLen: DWORD;
-  Status: DWORD;
-  strMAC: AnsiString;
-  i: Integer;
-begin
-  strings.Clear;
-
-  BufLen:= sizeof(AdapterInfo);
-  pAdapterInfo:= @AdapterInfo;
-
-  Status:= GetAdaptersInfo(nil, BufLen);
-  pAdapterInfo:= AllocMem(BufLen);
-  try
-    Status:= GetAdaptersInfo(pAdapterInfo, BufLen);
-
-    if (Status <> ERROR_SUCCESS) then
-      begin
-        case Status of
-          ERROR_NOT_SUPPORTED:
-            strings.Add('GetAdaptersInfo is not supported by the operating ' +
-                        'system running on the local computer.');
-          ERROR_NO_DATA:
-            strings.Add('No network adapter on the local computer.');
-        else
-            strings.Add('GetAdaptersInfo failed with error #' + IntToStr(Status));
-        end;
-        Dispose(pAdapterInfo);
-        Exit;
-      end;
-
-    while (pAdapterInfo <> nil) do
-      begin
-        strings.Add('Description: ' + pAdapterInfo^.Description);
-        strings.Add('Name: ' + pAdapterInfo^.AdapterName);
-
-        strMAC := '';
-        for I := 0 to pAdapterInfo^.AddressLength - 1 do
-            strMAC := strMAC + '-' + IntToHex(pAdapterInfo^.Address[I], 2);
-
-        Delete(strMAC, 1, 1);
-        strings.Add('MAC address: ' + strMAC);
-        strings.Add('IP address: ' + pAdapterInfo^.IpAddressList.IpAddress.S);
-        strings.Add('IP subnet mask: ' + pAdapterInfo^.IpAddressList.IpMask.S);
-        strings.Add('Gateway: ' + pAdapterInfo^.GatewayList.IpAddress.S);
-        strings.Add('DHCP enabled: ' + IntTOStr(pAdapterInfo^.DhcpEnabled));
-        strings.Add('DHCP: ' + pAdapterInfo^.DhcpServer.IpAddress.S);
-        strings.Add('Have WINS: ' + BoolToStr(pAdapterInfo^.HaveWins,True));
-        strings.Add('Primary WINS: ' + pAdapterInfo^.PrimaryWinsServer.IpAddress.S);
-        strings.Add('Secondary WINS: ' + pAdapterInfo^.SecondaryWinsServer.IpAddress.S);
-
-        pTempAdapterInfo := pAdapterInfo;
-        pAdapterInfo:= pAdapterInfo^.Next;
-      if assigned(pAdapterInfo) then Dispose(pTempAdapterInfo);
-    end;
-  finally
-    Dispose(pAdapterInfo);
-  end;
-end;
+//procedure RetrieveLocalAdapterInformation(strings: TStrings);
+//var
+//  pAdapterInfo, pTempAdapterInfo: PIP_ADAPTER_INFO;
+//  AdapterInfo: IP_ADAPTER_INFO;
+//  BufLen: DWORD;
+//  Status: DWORD;
+//  strMAC: AnsiString;
+//  i: Integer;
+//begin
+//  strings.Clear;
+//
+//  BufLen:= sizeof(AdapterInfo);
+//  pAdapterInfo:= @AdapterInfo;
+//
+//  Status:= GetAdaptersInfo(nil, BufLen);
+//  pAdapterInfo:= AllocMem(BufLen);
+//  try
+//    Status:= GetAdaptersInfo(pAdapterInfo, BufLen);
+//
+//    if (Status <> ERROR_SUCCESS) then
+//      begin
+//        case Status of
+//          ERROR_NOT_SUPPORTED:
+//            strings.Add('GetAdaptersInfo is not supported by the operating ' +
+//                        'system running on the local computer.');
+//          ERROR_NO_DATA:
+//            strings.Add('No network adapter on the local computer.');
+//        else
+//            strings.Add('GetAdaptersInfo failed with error #' + IntToStr(Status));
+//        end;
+//        Dispose(pAdapterInfo);
+//        Exit;
+//      end;
+//
+//    while (pAdapterInfo <> nil) do
+//      begin
+//        strings.Add('Description: ' + pAdapterInfo^.Description);
+//        strings.Add('Name: ' + pAdapterInfo^.AdapterName);
+//
+//        strMAC := '';
+//        for I := 0 to pAdapterInfo^.AddressLength - 1 do
+//            strMAC := strMAC + '-' + IntToHex(pAdapterInfo^.Address[I], 2);
+//
+//        Delete(strMAC, 1, 1);
+//        strings.Add('MAC address: ' + strMAC);
+//        strings.Add('IP address: ' + pAdapterInfo^.IpAddressList.IpAddress.S);
+//        strings.Add('IP subnet mask: ' + pAdapterInfo^.IpAddressList.IpMask.S);
+//        strings.Add('Gateway: ' + pAdapterInfo^.GatewayList.IpAddress.S);
+//        strings.Add('DHCP enabled: ' + IntTOStr(pAdapterInfo^.DhcpEnabled));
+//        strings.Add('DHCP: ' + pAdapterInfo^.DhcpServer.IpAddress.S);
+//        strings.Add('Have WINS: ' + BoolToStr(pAdapterInfo^.HaveWins,True));
+//        strings.Add('Primary WINS: ' + pAdapterInfo^.PrimaryWinsServer.IpAddress.S);
+//        strings.Add('Secondary WINS: ' + pAdapterInfo^.SecondaryWinsServer.IpAddress.S);
+//
+//        pTempAdapterInfo := pAdapterInfo;
+//        pAdapterInfo:= pAdapterInfo^.Next;
+//      if assigned(pAdapterInfo) then Dispose(pTempAdapterInfo);
+//    end;
+//  finally
+//    Dispose(pAdapterInfo);
+//  end;
+//end;
 
 function ResolveAddress(HostName: String; out Address: DWORD): Boolean;
 var  lpHost:        PHostEnt;

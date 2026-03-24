@@ -13,7 +13,7 @@ function GetStreamFromDropDataFormat(AFormat: TVirtualFileStreamDataFormat): TSt
 var
   LStream, LTargetAdapter: IStream;
   LTargetStream: TMemoryStream;
-  LInt1, LInt2: LargeInt;
+  LInt1, LInt2: LargeUInt;
 begin
   Result := nil;
   LStream := TVirtualFileStreamDataFormat(AFormat).FileContentsClipboardFormat.GetStream(0);
@@ -45,7 +45,7 @@ function GetStreamFromDropDataFormat2(AFormat: TVirtualFileStreamDataFormat; AId
 var
   LStream, LTargetAdapter: IStream;
   LTargetStream: TMemoryStream;
-  LInt, LInt1, LInt2: LargeInt;
+  LInt, LInt1, LInt2: LargeUInt;
   LStreamStat: TStatStg;
 begin
   Result := nil;

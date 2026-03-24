@@ -6,7 +6,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, NxEdit,
   Vcl.ComCtrls, Vcl.ToolWin, Vcl.ImgList, NxColumns, NxColumnClasses,
-  NxScrollControl, NxCustomGridControl, NxCustomGrid, NxGrid, Vcl.ExtCtrls;
+  NxScrollControl, NxCustomGridControl, NxCustomGrid, NxGrid, Vcl.ExtCtrls,
+  System.ImageList;
 
 type
   TFrame1 = class(TFrame)

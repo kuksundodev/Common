@@ -24,7 +24,7 @@ type
   end;
 
   TOrmUtil = class
-    class procedure AddOrUpdateOrm<T:TOrm>(const AOrm: T; const AIsUpdate: Boolean; ADB: TRestClientDB); static;
+    class function AddOrUpdateOrm<T:TOrm>(const AOrm: T; const AIsUpdate: Boolean; ADB: TRestClientDB): integer; static;
     class procedure AssignRecordToOrm<T: record>(const ARec: T; AOrm: TOrm); static;
     //mORMot2 native RTTI 방식
     //**TOrmProps와 TOrmPropInfo**를 이용해 이미 생성된 ORM 메타데이터를 사용
@@ -40,16 +40,18 @@ uses UnitStringUtil;
 
 { TOrmUtil }
 
-class procedure TOrmUtil.AddOrUpdateOrm<T>(const AOrm: T; const AIsUpdate: Boolean;
-  ADB: TRestClientDB);
+class function TOrmUtil.AddOrUpdateOrm<T>(const AOrm: T; const AIsUpdate: Boolean;
+  ADB: TRestClientDB): integer;
 begin
+  Result := -1;
+
   if AIsUpdate then
   begin
-    ADB.Update(AOrm);
+    Result := Ord(ADB.Update(AOrm));
   end
   else
   begin
-    ADB.Add(AOrm, true);
+    Result := ADB.Add(AOrm, true);
   end;
 end;
 

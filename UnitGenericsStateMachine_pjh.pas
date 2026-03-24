@@ -191,7 +191,7 @@ constructor TStateHolder<TState, TTrigger>.Create(AStateMachine
 begin
   inherited Create;
   FStateMachine := AStateMachine;
-  FTriggers := Collections.NewKeyValue<TTrigger, TTriggerHolder<TState, TTrigger>>;
+  FTriggers := Collections.NewPlainKeyValue<TTrigger, TTriggerHolder<TState, TTrigger>>;
   FState := AState;
 end;
 
@@ -301,7 +301,7 @@ end;
 constructor TStateMachine<TState, TTrigger>.Create;
 begin
   inherited Create;
-  FStates := Collections.NewKeyValue<TState, TStateHolder<TState, TTrigger>>;
+  FStates := Collections.NewPlainKeyValue<TState, TStateHolder<TState, TTrigger>>;
 end;
 
 destructor TStateMachine<TState, TTrigger>.Destroy;

@@ -12,12 +12,12 @@ uses
   DragDropGraphics, DragDropPIDL, DragDropText,
 
   mormot.core.base, mormot.core.os, mormot.core.text, mormot.core.collections,
-  mormot.core.datetime, mormot.rest.sqlite3,
+  mormot.core.datetime, mormot.rest.sqlite3, mormot.core.buffers,
 
   MapiDefs,
 
   FrmFileSelect,
-  UnitJHPFileRecord, UnitJHPFileData;
+  UnitJHPFileRecord, UnitJHPFileData, System.ImageList;
 
 type
   TOLMessage = class(TObject)

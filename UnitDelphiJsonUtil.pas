@@ -8,6 +8,7 @@ type
   TJsonUtil = class
     class function GetTJSONArrayFromJsonObjStr(const AJsonObj: string; out AJsonAry: TJSONArray): string;
     class function GetTJSONArrayFromJsonAryStr(const AJsonAry: string): TJSONArray;
+    class function GetTJSONObjectFromJsonObjStr(const AJsonObjStr: string; out AJsonObject: TJSONObject): Boolean;
   end;
 
 implementation
@@ -44,6 +45,25 @@ begin
   except
     on E: Exception do
       Result := Format('JSON 파싱 오류: %s', [E.Message]);
+  end;
+end;
+
+class function TJsonUtil.GetTJSONObjectFromJsonObjStr(const AJsonObjStr: string;
+  out AJsonObject: TJSONObject): Boolean;
+var
+  LValue: TJSONValue;
+begin
+  Result := False;
+  LValue := TJSONObject.ParseJSONValue(AJsonObjStr);
+  if Assigned(LValue) then
+  begin
+    if LValue is TJSONObject then
+    begin
+      AJsonObject := LValue as TJSONObject;
+      Result := True;
+    end
+    else
+      LValue.Free; // JSON이 Object가 아닌 경우 메모리 해제
   end;
 end;
 
