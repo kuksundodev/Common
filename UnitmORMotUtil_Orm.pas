@@ -3,8 +3,8 @@ unit UnitmORMotUtil_Orm;
 interface
 
 uses System.SysUtils, System.Rtti, System.TypInfo, System.Generics.Collections,
-  mormot.core.base, mormot.core.rtti, mormot.core.text, mormot.orm.core,
-  mormot.orm.base, mormot.rest.sqlite3;
+  mormot.core.base, mormot.core.rtti, mormot.core.text, mormot.core.unicode,
+  mormot.orm.core, mormot.orm.base, mormot.rest.sqlite3, mormot.db.raw.sqlite3;
 
 type
   TOrmRecordMapItem = record
@@ -31,7 +31,15 @@ type
     class procedure AssignRecordToOrmNative<T: record>(AOrm: TOrm; const ARec: T); static;
 
     class procedure AssignOrmToRecordNative<T: record>(AOrm: TOrm; var ARec: T); static;
-  end;
+    /// INSERT / UPDATE / DELETE 전용 실행 함수
+    /// @param DB      TSqlDatabase 인스턴스
+    /// @param SQL     실행할 SQL ('INSERT INTO t(a,b) VALUES(?,?)')
+    /// @param Params  ? 에 순서대로 바인딩될 파라미터 배열
+    /// @returns       영향받은 행 수
+    class function ExecuteNonQuery(DB: TSqlDatabase;
+      const SQL: RawUtf8;
+      const Params: array of const): integer;
+      end;
 
 implementation
 
@@ -169,6 +177,74 @@ begin
     s := RawUtf8(v.AsString);
     prop.SetValue(AOrm, PUtf8Char(s), Length(s), False);
 //    prop.SetValue(AOrm, field.GetValue(recValue.GetReferenceToRawData));
+  end;
+end;
+
+class function TOrmUtil.ExecuteNonQuery(DB: TSqlDatabase; const SQL: RawUtf8;
+  const Params: array of const): integer;
+var
+  Req: TSqlRequest;
+  i: integer;
+begin
+  Result := 0;
+
+  // SELECT 실행 방지
+  if IdemPChar(Pointer(TrimU(SQL)), 'SELECT') then
+    raise ESqlite3Exception.Create('ExecuteNonQuery: SELECT는 허용되지 않습니다.');
+
+  if DB = nil then
+    raise ESqlite3Exception.Create('ExecuteNonQuery: DB가 nil입니다.');
+
+  Req.Prepare(DB.DB, SQL);
+  try
+    // 파라미터 바인딩 (1-based)
+    for i := 0 to High(Params) do
+    begin
+      case Params[i].VType of
+        vtInteger:
+          Req.Bind(i + 1, Params[i].VInteger);
+
+        vtInt64:
+          Req.Bind(i + 1, Params[i].VInt64^);
+
+        vtExtended:
+          Req.Bind(i + 1, Params[i].VExtended^);
+
+        vtAnsiString:
+          Req.BindS(i + 1, RawUtf8(Params[i].VAnsiString));
+
+        vtUnicodeString:
+          Req.BindS(i + 1, RawUtf8(UnicodeString(Params[i].VUnicodeString)));
+
+        vtWideString:
+          Req.BindS(i + 1, RawUnicodeToUtf8(
+            Params[i].VWideString,
+            Length(WideString(Params[i].VWideString))));
+
+        vtBoolean:
+          Req.Bind(i + 1, Ord(Params[i].VBoolean));
+
+        vtPointer:
+          if Params[i].VPointer = nil then
+            Req.BindNull(i + 1)  // nil → NULL
+          else
+            raise ESqlite3Exception.CreateFmt(
+              'ExecuteNonQuery: 지원하지 않는 포인터 파라미터 (index=%d)', [i]);
+      else
+        raise ESqlite3Exception.CreateFmt(
+          'ExecuteNonQuery: 지원하지 않는 파라미터 타입 %d (index=%d)',
+          [Params[i].VType, i]);
+      end;
+    end;
+
+    // 실행 (SQLITE_DONE 까지 Step 반복)
+    Req.ExecuteAll;
+
+    // 영향받은 행 수
+    Result := DB.LastChangeCount;
+
+  finally
+    Req.Close; // Statement 반드시 해제
   end;
 end;
 
