@@ -123,6 +123,7 @@ const
   CLICK_ID_Grid_CMListDblClick = 213;       //unCMClientMain.TfCMClientMain.btn_FindClick
   CLICK_ID_btn_CheckDateClick = 214;
   GET_CARID_VALUE_ID_btn_CheckDateClick = 215;  //unCMDateList.TfDlgCMDateList.btn_CheckDateClick
+  EXEC_ID_BIKE = 216;
 
   //++                    ;
 type
