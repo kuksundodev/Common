@@ -8,6 +8,7 @@ uses
   mormot.crypt.secure,  // Secure random number generation and key derivation
   mormot.core.base,     // Base utility functions and types
   mormot.core.text,     // Text processing and encoding functions
+  mormot.core.unicode,
   mormot.core.buffers;  // Buffer management and manipulation
 
 //====================================================================================
@@ -57,7 +58,8 @@ type
   TEncryptParam = packed record
     EncryptionMode: TEncryptionMode;
     KeySize: TKeySize;
-    IsIVRandom: Boolean;
+    IsIVRandom,
+    IsCompressed: Boolean;
   end;
 
   TMormotCryptUtil = class
@@ -84,6 +86,8 @@ const
   SHUFFLE_MAP: array[0..9] of Integer = (3, 7, 1, 9, 0, 5, 2, 8, 4, 6);
 
 implementation
+
+uses UnitCompressUtil;
 
 // 문자열 Shuffle 함수
 function ShuffleString(const AInput: string): string;
@@ -195,9 +199,10 @@ begin
   value := Base62ToInt(ABase62);
 
   // 2. 비트 분해
-  Result.EncryptionMode := TEncryptionMode((value shr 16) and $FF);
-  Result.KeySize     := TKeySize((value shr 8) and $FF);
-  Result.IsIVRandom  := ((value and $FF) <> 0);
+  Result.EncryptionMode := TEncryptionMode((value shr 24) and $FF);
+  Result.KeySize     := TKeySize((value shr 16) and $FF);
+  Result.IsIVRandom  := ((value shr 8) and $FF) <> 0;
+  Result.IsCompressed:= (value and $FF) <> 0;
 end;
 
 class function TMormotCryptUtil.DecryptMsgByMode(const AMsgEncrypted: string; APwd: string;
@@ -211,7 +216,9 @@ var
 begin
   Result := '';
 
-  LCipherText := Copy(AMsgEncrypted, 11, Length(AMsgEncrypted)-10);
+  LCipherText := StringToUtf8(Copy(AMsgEncrypted, 11, Length(AMsgEncrypted)-10));
+//  LCipherText := AlgoSynLZ.Decompress(LCipherText);
+
   LHeader := Copy(AMsgEncrypted, 1, 10);
   LHeader := UnshuffleString(LHeader);
 
@@ -233,6 +240,9 @@ begin
   try
     LCipherText := Base64ToBin(LCipherText);  // Decode Base64
 
+    if LParamRec.IsCompressed then
+      LCipherText := StringToUtf8(ZDecompressString(Utf8ToString(LCipherText)));
+
     // Perform decryption with PKCS7 padding removal
     // The random IV parameter must match the encryption settings
     LPlainText := LAES.DecryptPkcs7(LCipherText, LParamRec.IsIVRandom);
@@ -250,9 +260,10 @@ var
 begin
   // 비트 패킹
   value :=
-    (UInt64(Ord(AParamRec.EncryptionMode)) shl 16) or
-    (UInt64(Ord(AParamRec.KeySize)) shl 8) or
-    UInt64(Ord(AParamRec.IsIVRandom));
+    (UInt64(Ord(AParamRec.EncryptionMode)) shl 24) or
+    (UInt64(Ord(AParamRec.KeySize)) shl 16) or
+    (UInt64(Ord(AParamRec.IsIVRandom)) shl 8) or
+    UInt64(Ord(AParamRec.IsCompressed));
 
   // Base62 변환 → 5자리
   Result := IntToBase62WithLength(value, 5);
@@ -283,17 +294,23 @@ begin
     LParamRec.EncryptionMode := AMode;
     LParamRec.KeySize := AKeySize;
     LParamRec.IsIVRandom := AIsIVRandom;
+    LParamRec.IsCompressed := Length(AMsg) > 200;
 
     LHeader := EncodeParam2Base62(LParamRec);
 
     // Convert input text to UTF-8 byte representation
-    LPlainText := ToUtf8(AMsg);
+
+    if LParamRec.IsCompressed then
+      LPlainText := StringToUtf8(ZCompressString(AMsg))
+//    LPlainText := AlgoSynLZ.Compress(LPlainText)
+    else
+      LPlainText := StringToUtf8(AMsg);
 
     // Perform encryption with PKCS7 padding and optional random IV
     // The CheckBoxUseRandomIV.Checked parameter determines whether to use
     // a cryptographically secure random IV (recommended) or a zero IV
     LCipherText := LAES.EncryptPkcs7(LPlainText, AIsIVRandom);
-    Result := ShuffleString(LHeader+APwd) + BinToBase64(LCipherText);
+    Result := ShuffleString(LHeader+APwd) + Utf8ToString(BinToBase64(LCipherText));
   finally
     if Assigned(LAES) then
       LAES.Free;
