@@ -4,6 +4,7 @@ interface
 
 uses System.SysUtils, System.Rtti, System.TypInfo, System.Generics.Collections,
   mormot.core.base, mormot.core.rtti, mormot.core.text, mormot.core.unicode,
+  mormot.core.variants, mormot.core.json,
   mormot.orm.core, mormot.orm.base, mormot.rest.sqlite3, mormot.db.raw.sqlite3;
 
 type
@@ -25,6 +26,7 @@ type
 
   TOrmUtil = class
     class function AddOrUpdateOrm<T:TOrm>(const AOrm: T; const AIsUpdate: Boolean; ADB: TRestClientDB): integer; static;
+    class function DeleteOrm<T:TOrm>(const AID: TID; const AIsUpdate: Boolean; ADB: TRestClientDB): Boolean; static;
     class procedure AssignRecordToOrm<T: record>(const ARec: T; AOrm: TOrm); static;
     //mORMot2 native RTTI 방식
     //**TOrmProps와 TOrmPropInfo**를 이용해 이미 생성된 ORM 메타데이터를 사용
@@ -39,7 +41,16 @@ type
     class function ExecuteNonQuery(DB: TSqlDatabase;
       const SQL: RawUtf8;
       const Params: array of const): integer;
-      end;
+    class function QueryToDocVariant(DB: TSqlDatabase;
+      const SQL: RawUtf8;
+      const Params: array of const): variant;
+    class function QueryToJsonAry(DB: TSqlDatabase;
+      const SQL: RawUtf8;
+      const Params: array of const): RawUtf8;
+    class function QueryToJsonAryByWriter(DB: TSqlDatabase;
+      const SQL: RawUtf8;
+      const Params: array of const): RawUtf8;
+  end;
 
 implementation
 
@@ -180,6 +191,17 @@ begin
   end;
 end;
 
+class function TOrmUtil.DeleteOrm<T>(const AID: TID; const AIsUpdate: Boolean;
+  ADB: TRestClientDB): Boolean;
+begin
+  Result := False;
+
+  if AIsUpdate then
+  begin
+    Result := ADB.Delete(T, AID);
+  end
+end;
+
 class function TOrmUtil.ExecuteNonQuery(DB: TSqlDatabase; const SQL: RawUtf8;
   const Params: array of const): integer;
 var
@@ -245,6 +267,147 @@ begin
 
   finally
     Req.Close; // Statement 반드시 해제
+  end;
+end;
+
+class function TOrmUtil.QueryToDocVariant(DB: TSqlDatabase; const SQL: RawUtf8;
+  const Params: array of const): variant;
+var
+  req     : TSqlRequest;
+  resArr  : TDocVariantData;   // JSON Array 역할
+  rowObj  : TDocVariantData;   // JSON Object (한 행)
+  i       : Integer;
+  colName : RawUtf8;
+  colVal  : RawUtf8;
+begin
+  // 빈 배열로 초기화
+  resArr.InitArray([], JSON_FAST_FLOAT);
+
+  if SQL = '' then
+  begin
+    Result := variant(resArr);
+    Exit;
+  end;
+
+  if DB = nil then
+    raise ESqlite3Exception.Create('ExecuteNonQuery: DB가 nil입니다.');
+
+  Req.Prepare(DB.DB, SQL);
+  try
+    // 파라미터 바인딩 (1-based)
+    for i := 0 to High(Params) do
+    begin
+      case Params[i].VType of
+        vtInteger:
+          Req.Bind(i + 1, Params[i].VInteger);
+
+        vtInt64:
+          Req.Bind(i + 1, Params[i].VInt64^);
+
+        vtExtended:
+          Req.Bind(i + 1, Params[i].VExtended^);
+
+        vtAnsiString:
+          Req.BindS(i + 1, RawUtf8(Params[i].VAnsiString));
+
+        vtUnicodeString:
+          Req.BindS(i + 1, RawUtf8(UnicodeString(Params[i].VUnicodeString)));
+
+        vtWideString:
+          Req.BindS(i + 1, RawUnicodeToUtf8(
+            Params[i].VWideString,
+            Length(WideString(Params[i].VWideString))));
+
+        vtBoolean:
+          Req.Bind(i + 1, Ord(Params[i].VBoolean));
+
+        vtPointer:
+          if Params[i].VPointer = nil then
+            Req.BindNull(i + 1)  // nil → NULL
+          else
+            raise ESqlite3Exception.CreateFmt(
+              'ExecuteNonQuery: 지원하지 않는 포인터 파라미터 (index=%d)', [i]);
+      else
+        raise ESqlite3Exception.CreateFmt(
+          'ExecuteNonQuery: 지원하지 않는 파라미터 타입 %d (index=%d)',
+          [Params[i].VType, i]);
+      end;
+    end;//for
+
+  while req.Step = SQLITE_ROW do
+  begin
+    rowObj.InitObject([], JSON_FAST_FLOAT);
+
+    for i := 0 to req.FieldCount - 1 do
+    begin
+      colName := req.FieldName(i);
+      req.FieldUtf8(i, colVal);
+      rowObj.AddValue(colName, colVal);
+    end;
+
+    resArr.AddItem(variant(rowObj));
+  end; //while
+
+  Result := variant(resArr);
+
+//  TDocVariantData(Result).Values[0].name; // 첫 행의 name 필드
+  finally
+    Req.Close; // Statement 반드시 해제
+  end;
+end;
+
+class function TOrmUtil.QueryToJsonAry(DB: TSqlDatabase; const SQL: RawUtf8;
+  const Params: array of const): RawUtf8;
+begin
+  Result := VariantToUtf8(QueryToDocVariant(DB, SQL, Params));
+end;
+
+class function TOrmUtil.QueryToJsonAryByWriter(DB: TSqlDatabase;
+  const SQL: RawUtf8; const Params: array of const): RawUtf8;
+var
+  req     : TSqlRequest;
+  writer  : TJsonWriter;
+  temp    : TTextWriterStackBuffer; // 스택 버퍼 (힙 할당 최소화)
+  i       : Integer;
+  LUtf8: RawUtf8;
+begin
+  Result := '[]';
+  if SQL = '' then Exit;
+
+  req.Prepare(db.DB, SQL);
+  try
+    writer := TJsonWriter.CreateOwnedStream(temp);
+    try
+      writer.Add('[');   // 배열 시작
+
+      while req.Step = SQLITE_ROW do
+      begin
+        writer.Add('{');  // 오브젝트 시작
+
+        for i := 0 to req.FieldCount - 1 do
+        begin
+          // "컬럼명":"값"
+          writer.AddProp(pointer(req.FieldName(i)));
+          writer.AddString('"');
+          req.FieldUtf8(i,LUtf8);
+          writer.AddJsonEscape(pointer(LUtf8));
+          writer.AddString('"');
+          if i < req.FieldCount - 1 then
+            writer.Add(',');
+        end;
+
+        writer.Add('}');  // 오브젝트 종료
+        writer.Add(',');  // 행 구분자 (마지막은 나중에 제거)
+      end;
+
+      writer.CancelLastComma; // 마지막 쉼표 제거
+      writer.Add(']');   // 배열 종료
+      writer.SetText(Result);
+    finally
+      writer.Free;
+    end;
+  finally
+    req.Close;
   end;
 end;
 

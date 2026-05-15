@@ -2,7 +2,7 @@ unit UnitmORMotUtil_Encrypt;
 
 interface
 
-uses
+uses classes, SysUtils, System.NetEncoding,
   // mORMot V2 Cryptographic Framework
   mormot.crypt.core,    // Core cryptographic functions and types
   mormot.crypt.secure,  // Secure random number generation and key derivation
@@ -63,6 +63,12 @@ type
   end;
 
   TMormotCryptUtil = class
+    class function ShuffleStringSeed(const S: string; Seed: Integer): string;
+    class function UnshuffleStringSeed(const S: string; Seed: Integer): string;
+    class function ShuffleByBlock10(const S: string; Seed: Integer): string;
+    class function UnshuffleByBlock10(const S: string; Seed: Integer): string;
+    //delphi7 에서 받은 base64를 복원하는데 사용
+    class function Base64ToWideString(const B64: string): string;
     class function IntToBase62WithLength(Value: UInt64; const MinLength: Integer = 0): string;
     class function Base62ToInt(const S: string): UInt64;
     class function EncodeParam2Base62(AParamRec: TEncryptParam): string;
@@ -144,6 +150,26 @@ begin
 
     Result := Result * 62 + UInt64(posVal);
   end;
+end;
+
+class function TMormotCryptUtil.Base64ToWideString(const B64: string): string;
+var
+  InputStream:  TStringStream;
+  OutputStream: TMemoryStream;
+  Bytes: TBytes;
+  ByteLen: Integer;
+  CleanB64: string;
+begin
+  // 줄바꿈 제거 (Delphi 7 EncodeStream은 76자마다 줄바꿈 삽입)
+  CleanB64 := StringReplace(B64, #13#10, '', [rfReplaceAll]);
+  CleanB64     := StringReplace(CleanB64, #10, '', [rfReplaceAll]);
+
+  Bytes   := TNetEncoding.Base64.DecodeStringToBytes(CleanB64);
+  ByteLen := Length(Bytes);
+
+  SetLength(Result, ByteLen div SizeOf(WideChar));
+  if ByteLen > 0 then
+    Move(Bytes[0], Result[1], ByteLen);
 end;
 
 class function TMormotCryptUtil.CreateAESInstance(const APwd: string; const AMode: TEncryptionMode;
@@ -406,6 +432,96 @@ begin
   SHA256Hash2 := Sha256Digest(pointer(AMsg), Length(AMsg));
   Hash := BinToHex(@SHA256Hash2, SizeOf(SHA256Hash2));
   Result := Extract5FromMsg(Hash);
+end;
+
+class function TMormotCryptUtil.ShuffleByBlock10(const S: string;
+  Seed: Integer): string;
+var
+  i, blockIndex: Integer;
+  part: string;
+begin
+  Result := '';
+  blockIndex := 0;
+
+  i := 1;
+  while i <= Length(S) do
+  begin
+    part := Copy(S, i, 10);
+
+    // 블록별 seed 변경
+    Result := Result + ShuffleStringSeed(part, Seed + blockIndex);
+
+    Inc(i, 10);
+    Inc(blockIndex);
+  end;
+end;
+
+class function TMormotCryptUtil.ShuffleStringSeed(const S: string;
+  Seed: Integer): string;
+var
+  i, j: Integer;
+  temp: Char;
+begin
+  Result := S;
+  //Seed는 RandSeed에 할당되어
+  //Random() 함수의 결과를 결정하는 내부 상태로 사용됩니다
+  //RandSeed = 다음 난수 생성,Seed -> RandSeed -> Random() 결과 결정
+  RandSeed := Seed;
+
+  for i := Length(Result) downto 2 do
+  begin
+    j := Random(i) + 1;
+    temp := Result[i];
+    Result[i] := Result[j];
+    Result[j] := temp;
+  end;
+end;
+
+class function TMormotCryptUtil.UnshuffleByBlock10(const S: string;
+  Seed: Integer): string;
+var
+  i, blockIndex: Integer;
+  part: string;
+begin
+  Result := '';
+  blockIndex := 0;
+
+  i := 1;
+  while i <= Length(S) do
+  begin
+    part := Copy(S, i, 10);
+
+    Result := Result + UnshuffleStringSeed(part, Seed + blockIndex);
+
+    Inc(i, 10);
+    Inc(blockIndex);
+  end;
+end;
+
+class function TMormotCryptUtil.UnshuffleStringSeed(const S: string;
+  Seed: Integer): string;
+var
+  i, j: Integer;
+  swaps: array of Integer;
+  temp: Char;
+begin
+  Result := S;
+  RandSeed := Seed;
+
+  SetLength(swaps, Length(S));
+
+  // 동일한 swap 기록
+  for i := Length(S) downto 2 do
+    swaps[i-1] := Random(i) + 1;
+
+  // 역순 적용
+  for i := 2 to Length(S) do
+  begin
+    j := swaps[i-1];
+    temp := Result[i];
+    Result[i] := Result[j];
+    Result[j] := temp;
+  end;
 end;
 
 end.

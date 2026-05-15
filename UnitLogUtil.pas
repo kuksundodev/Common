@@ -2,7 +2,7 @@ unit UnitLogUtil;
 
 interface
 
-uses System.Classes, System.Sysutils, Vcl.StdCtrls, Forms;
+uses System.Classes, System.Sysutils, Vcl.StdCtrls, vcl.Forms;
 
 procedure DoLogTextFile(const AFileName, ATxt: string);
 procedure DoLogTFileStream(const AFileName, ATxt: string);
