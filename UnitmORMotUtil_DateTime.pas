@@ -5,8 +5,12 @@ interface
 uses System.SysUtils, UnitStringUtil,
   mormot.core.base, mormot.core.datetime, mormot.core.rtti;
 
+//AStr: YYYY-MM-DD
 function GetTimeLogFromStr(AStr: string): TTimeLog;
 function GetDateStrFromTimeLog(ATimeLog: TTimeLog): string;
+//AStr: 135984481601
+function GetTimeLogFromStrInt(AStr: string): TTimeLog;
+function GetDateTimeFromStrInt(AStr: string): TDateTime;
 
 implementation
 
@@ -66,6 +70,20 @@ begin
         if DT^ <> 0 then
           DT^ := DT^ + (HoursOffset / 24);
       end;
+end;
+
+function GetTimeLogFromStrInt(AStr: string): TTimeLog;
+var
+  i64: Int64;
+begin
+  i64 := StrToInt64Def(AStr, 0);
+
+  Result := TTimeLog(i64);
+end;
+
+function GetDateTimeFromStrInt(AStr: string): TDateTime;
+begin
+  Result := TimeLogToDateTime(GetTimeLogFromStrInt(AStr));
 end;
 
 {

@@ -2,7 +2,7 @@ unit UnitDateUtil;
 
 interface
 
-uses SysUtils, System.DateUtils;
+uses SysUtils, System.DateUtils, Math;
 
 const
   HoursPerDay   = 24;
@@ -49,6 +49,7 @@ function DateTimeToUnixNoUTC(const AValue: TDateTime): Int64;
 function GetHhnnFromMinute(const AMin: integer): string;
 //분을 시간.분으로 표시(2.5)
 function GetHhCommannFromMinute(const AMin: integer): string;
+function CombineDateAndTime(const ADate, ATime: TDateTime): TDateTime;
 
 var pjhShortMonthNames : array[1..12] of string =
   ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec');
@@ -345,6 +346,11 @@ begin
   LHour := AMin / 60;
 
   Result := FormatFloat('0.0', LHour);
+end;
+
+function CombineDateAndTime(const ADate, ATime: TDateTime): TDateTime;
+begin
+  Result := Trunc(ADate) + Frac(ATime);
 end;
 
 end.
