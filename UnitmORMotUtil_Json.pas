@@ -3,9 +3,11 @@ unit UnitmORMotUtil_Json;
 interface
 
 uses
+  System.SysUtils,
   System.JSON,            // TJSONArray, TJSONObject, TJSONString
   mormot.core.base,
   mormot.core.data,
+  mormot.core.unicode,
   mormot.core.text,
   mormot.core.variants;   // TDocVariantData
 
@@ -13,6 +15,13 @@ type
   TMormot_Json = class
     class function DocVariantToJsonArray(const ADoc: variant): TJSONArray;
     class function DocVariantToJsonArrayViaJson(const ADoc: variant): TJSONArray;
+    class function ChangeJsonValue( const AJson: RawUtf8;
+                                    const AKey: RawUtf8;
+                                    const AValue: string;
+                                    ATypeKind: TTypeKind): RawUtf8;
+    class function ChangeJsonValueAutoType( const AJson: RawUtf8;
+                                            const AKey: RawUtf8;
+                                            const ANewValue: string): RawUtf8;
   end;
 
 // var
@@ -24,6 +33,102 @@ type
 implementation
 
 { TMormot_Json }
+
+class function TMormot_Json.ChangeJsonValue(const AJson, AKey: RawUtf8;
+  const AValue: string; ATypeKind: TTypeKind): RawUtf8;
+var
+  Doc: IDocDict;
+begin
+  Result := AJson;
+
+  // JSON → IDocDict
+  Doc := DocDict(AJson);
+
+  if Doc = nil then
+    Exit;
+
+  if not Doc.Exists(AKey) then
+    Exit;
+
+  case ATypeKind of
+    tkInteger, tkInt64:
+      Doc.I[AKey] := StrToInt64Def(AValue, 0);
+
+    tkFloat:
+      Doc.F[AKey] := StrToFloatDef(AValue, 0.0);
+
+    tkEnumeration:
+      begin
+        if SameText(AValue, 'true') then
+          Doc.B[AKey] := True
+        else if SameText(AValue, 'false') then
+          Doc.B[AKey] := False
+        else
+          Doc.I[AKey] := StrToIntDef(AValue, 0);
+      end;
+
+    tkString, tkLString, tkWString, tkUString:
+      Doc.S[AKey] := StringToUtf8(AValue);
+
+  else
+    // 기본은 문자열
+    Doc.S[AKey] := StringToUtf8(AValue);
+  end;
+
+  // IDocDict → JSON
+  Result := Doc.ToJson(jsonHumanReadable);
+end;
+
+class function TMormot_Json.ChangeJsonValueAutoType(const AJson, AKey: RawUtf8;
+  const ANewValue: string): RawUtf8;
+var
+  Doc: IDocDict;
+  V: Variant;
+  NewUtf8: RawUtf8;
+begin
+  Result := AJson;
+
+  Doc := DocDict(AJson);
+
+  if Doc = nil then
+    Exit;
+
+  if not Doc.Exists(AKey) then
+    Exit;
+
+  V := Doc[AKey];
+
+  case TVarType(V) and varTypeMask of
+    varBoolean:
+      Doc.B[AKey] :=
+        SameText(ANewValue, 'true') or
+        SameText(ANewValue, '1') or
+        SameText(ANewValue, 'Y');
+
+    varByte, varSmallint, varInteger, varShortInt,
+    varWord, varLongWord, varInt64:
+      Doc.I[AKey] := StrToInt64Def(ANewValue, 0);
+
+    varSingle, varDouble, varCurrency:
+      Doc.F[AKey] := StrToFloatDef(ANewValue, 0);
+
+    varNull, varEmpty:
+      begin
+        if SameText(ANewValue, 'null') then
+          Doc[AKey] := Null
+        else
+          Doc.S[AKey] := StringToUtf8(ANewValue);
+      end;
+
+  else
+    begin
+      NewUtf8 := StringToUtf8(ANewValue);
+      Doc.S[AKey] := NewUtf8;
+    end;
+  end;
+
+  Result := Doc.ToJson(jsonHumanReadable);
+end;
 
 class function TMormot_Json.DocVariantToJsonArray(
   const ADoc: variant): TJSONArray;
