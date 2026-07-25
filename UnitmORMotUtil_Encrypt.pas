@@ -85,6 +85,9 @@ type
       APwd: string=''; ASalt: RawByteString=''): string;
     class function DecryptMsgByMode(const AMsgEncrypted: string; APwd: string='';
       AMode: TEncryptionMode=emAES_CFB; AKeySize: TKeySize=ks256): string;
+
+    class function MD5Hash(const AText: string): string;
+    class function SHA256Hash(const AText: string): string;
   end;
 
 const
@@ -432,6 +435,16 @@ begin
   SHA256Hash2 := Sha256Digest(pointer(AMsg), Length(AMsg));
   Hash := BinToHex(@SHA256Hash2, SizeOf(SHA256Hash2));
   Result := Extract5FromMsg(Hash);
+end;
+
+class function TMormotCryptUtil.MD5Hash(const AText: string): string;
+begin
+  Result := Utf8ToString(MD5(StringToUtf8(AText)));
+end;
+
+class function TMormotCryptUtil.SHA256Hash(const AText: string): string;
+begin
+  Result := Utf8ToString(SHA256(StringToUtf8(AText)));
 end;
 
 class function TMormotCryptUtil.ShuffleByBlock10(const S: string;

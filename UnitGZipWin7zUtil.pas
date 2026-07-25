@@ -12,31 +12,50 @@ uses System.Classes, SysUtils,
   mormot.core.zip,
   mormot.lib.win7zip;
 
-function DeCompressFileWithWin7zip(ASrcFile, ADestFile, ADllFullPathName: string; Anosubfolder: Boolean=False): Boolean;
-//TgzÆÄÀÏ ¾ÐÃàÀ» Ç®¸é .tar ÆÄÀÏÀÌ Ç®¸²-´Ù½ÃÇÑ¹ø ¾ÐÃàÀ» Ç®¾î¾ß .tar ÆÄÀÏÀÌ Ç®¸²
-//APackedFileName: ''ÀÌ¸é ¸ðµç ÆÄÀÏ Decompress
-//Result: APackedFileName Contents
-//        APackedFileName = ''ÀÌ¸é return = ''
-function ExtractFromTgz2DirByPackedNameWin7Zip(ATgzFileName, ADestDir, ADllFullPathName: string; APackedFileName: string=''): string;
+type
+  TGZipWin7z_mormot2 = class
+  public
+    //7z.dll ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ - ADllFullPathNameï¿½ï¿½ ''ï¿½Ì¸ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½(JCL sevenzip.SevenzipLibraryDirï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
+    class var DllFullPathName: string;
+
+    //APackedFileName: ''ï¿½Ì¸ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ Decompress, ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    //ADllFullPathName: ''ï¿½Ì¸ï¿½ DllFullPathName Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+    class function DeCompressFileWithWin7zip(ASrcFile, ADestFile: string; ADllFullPathName: string='';
+      APackedFileName: string=''; Anosubfolder: Boolean=False): Boolean;
+    //Tgzï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ .tar ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½-ï¿½Ù½ï¿½ï¿½Ñ¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ï¿½ .tar ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½
+    //APackedFileName: ''ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Decompress
+    //ADllFullPathName: ''ï¿½Ì¸ï¿½ DllFullPathName Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+    //Result: APackedFileName Contents
+    //        APackedFileName = ''ï¿½Ì¸ï¿½ return = ''
+    class function ExtractFromTgz2DirByPackedNameWin7Zip(ATgzFileName, ADestDir: string;
+      APackedFileName: string=''; ADllFullPathName: string=''): string;
+  end;
 
 implementation
 
-function DeCompressFileWithWin7zip(ASrcFile, ADestFile, ADllFullPathName: string; Anosubfolder: Boolean): Boolean;
+class function TGZipWin7z_mormot2.DeCompressFileWithWin7zip(ASrcFile, ADestFile,
+  ADllFullPathName: string; APackedFileName: string; Anosubfolder: Boolean): Boolean;
 var
   L7zip: I7zReader;
-//  LSrcStream, LDestStream: TStream;
-//  LdestFile: string;
+  LDllFullPathName: string;
 begin
-//  if AIsFile then
-//    LDestFile := ADestFile
-//  else
-//    LDestFile := ADestFile + ExtractFileName(ASrcFile);
+  LDllFullPathName := ADllFullPathName;
 
-  L7zip := New7zReader(ASrcFile, fhUndefined, ADllFullPathName);
-  L7Zip.ExtractAll(ADestFile, Anosubfolder);
+  if LDllFullPathName = '' then
+    LDllFullPathName := DllFullPathName;
+
+  L7zip := New7zReader(ASrcFile, fhUndefined, LDllFullPathName);
+
+  if APackedFileName = '' then
+    L7zip.ExtractAll(ADestFile, Anosubfolder)
+  else
+    L7zip.Extract(StringToUtf8(APackedFileName), ADestFile, Anosubfolder);
+
+  Result := True;
 end;
 
-function ExtractFromTgz2DirByPackedNameWin7Zip(ATgzFileName, ADestDir, ADllFullPathName, APackedFileName: string): string;
+class function TGZipWin7z_mormot2.ExtractFromTgz2DirByPackedNameWin7Zip(ATgzFileName,
+  ADestDir, APackedFileName, ADllFullPathName: string): string;
 var
   LExtractFileName, LTarFileName: string;
 begin
@@ -45,12 +64,13 @@ begin
   if ADestDir = '' then
     ADestDir := 'C:\temp\';
 
-  //MPM11.tgz ÆÄÀÏÀ» c:\temp\¿¡ "MPM11" ÆÄÀÏ·Î ExtractÇÔ(.tar ÆÄÀÏÀÓ)
-  LTarFileName := ChangeFileExt(ExtractFileName(ATgzFileName), '');
-  DeCompressFileWithWin7zip(ATgzFileName, ADestDir+LTarFileName, ADllFullPathName);
+  ADestDir := IncludeTrailingPathDelimiter(ADestDir);
+
+  //MPM11.tgz ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ c:\temp\ï¿½ï¿½ "MPM11" ï¿½ï¿½ï¿½Ï·ï¿½ Extractï¿½ï¿½(.tar ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+  DeCompressFileWithWin7zip(ATgzFileName, ADestDir, ADllFullPathName);
 
   LExtractFileName := ADestDir + ChangeFileExt(ExtractFileName(ATgzFileName), '');
-  //c:\temp\MPM11 ÆÄÀÏÀÌ Á¸ÀçÇÏ¸é
+  //c:\temp\MPM11 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½
   if FileExists(LExtractFileName) then
   begin
     LTarFileName := ChangeFileExt(LExtractFileName, '.tar');
@@ -58,11 +78,11 @@ begin
     if FileExists(LTarFileName) then
       DeleteFile(LTarFileName);
 
-    //MPM11 ÆÄÀÏÀ» MPM11.tar ÆÄÀÏ·Î ÀÌ¸§ º¯°æÇÔ
+    //MPM11 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ MPM11.tar ï¿½ï¿½ï¿½Ï·ï¿½ ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if RenameFile(LExtractFileName, LTarFileName) then
     begin
-      //MPM11.tar ÆÄÀÏ¿¡¼­ "home\db\interface.json" ÆÄÀÏÀ» c:\temp\¿¡ Extract
-      DeCompressFileWithWin7zip(LTarFileName, ADestDir, APackedFileName);
+      //MPM11.tar ï¿½ï¿½ï¿½Ï¿ï¿½ï¿½ï¿½ "home\db\interface.json" ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ c:\temp\ï¿½ï¿½ Extract
+      DeCompressFileWithWin7zip(LTarFileName, ADestDir, ADllFullPathName, APackedFileName);
 
       if APackedFileName <> '' then
       begin
@@ -70,7 +90,7 @@ begin
 
         if FileExists(LExtractFileName) then
         begin
-          Result := StringFromFile(LExtractFileName);
+          Result := Utf8ToString(StringFromFile(LExtractFileName));
         end;
       end;
     end;

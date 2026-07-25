@@ -88,19 +88,25 @@ var
   Year, Month, Day, Hour, Min, Sec: Word;
 begin
   // 글자 수가 정확히 14자리인지 검증 (예외 처리)
-  if Length(ADateTime) <> 14 then
-    raise EConvertError.Create('올바른 YYYYMMDDHHMISS 형식이 아닙니다.');
+//  if Length(ADateTime) <> 14 then
+//    raise EConvertError.Create('올바른 YYYYMMDDHHMISS 형식이 아닙니다.');
 
-  // 문자열을 쪼개서 숫자로 변환
-  Year  := StrToInt(Copy(ADateTime, 1, 4));
-  Month := StrToInt(Copy(ADateTime, 5, 2));
-  Day   := StrToInt(Copy(ADateTime, 7, 2));
-  Hour  := StrToInt(Copy(ADateTime, 9, 2));
-  Min   := StrToInt(Copy(ADateTime, 11, 2));
-  Sec   := StrToInt(Copy(ADateTime, 13, 2));
+  // 글자 수가 정확히 14자리인지 검증 (예외 처리)
+  if Length(ADateTime) = 14 then
+  begin
+    // 문자열을 쪼개서 숫자로 변환
+    Year  := StrToInt(Copy(ADateTime, 1, 4));
+    Month := StrToInt(Copy(ADateTime, 5, 2));
+    Day   := StrToInt(Copy(ADateTime, 7, 2));
+    Hour  := StrToInt(Copy(ADateTime, 9, 2));
+    Min   := StrToInt(Copy(ADateTime, 11, 2));
+    Sec   := StrToInt(Copy(ADateTime, 13, 2));
 
-  // TDateTime 타입으로 조립
-  Result := EncodeDateTime(Year, Month, Day, Hour, Min, Sec, 0);
+    // TDateTime 타입으로 조립
+    Result := EncodeDateTime(Year, Month, Day, Hour, Min, Sec, 0);
+  end
+  else
+    Result := StrToDateTime(ADateTime);
 end;
 
 function FormatStringToDateTime(const AValue: string): TDateTime;

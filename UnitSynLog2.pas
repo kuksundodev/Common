@@ -6,6 +6,8 @@ uses System.SysUtils,
   mormot.core.log, mormot.core.base, mormot.core.os;
 
 procedure InitSynLog(ALogFile: string='');
+procedure InitSynLog2(ALogFIle: string=''; ALogLevel: TSynLogLevels= []
+                      );
 procedure DoLog(Amsg: string; ALogDate: Boolean = False;
   AMsgLevel: TSynLogInfo = sllEnter);
 
@@ -45,6 +47,22 @@ begin
     RotateFileSizeKB := 1024;//20*1024; // rotate by 20 MB logs
     RotateFileDailyAtHour := 0; //23;  rotate at 11:00 PM
 //    FileExistsAction := acAppend;
+  end;
+end;
+
+procedure InitSynLog2(ALogFIle: string; ALogLevel: TSynLogLevels);
+begin
+  with TSynLog.Family do
+  begin
+    if ALogLevel = [] then
+      ALogLevel := [sllInfo,sllError,sllException,sllExceptionOS, sllEnter];
+    Level := ALogLevel;
+    NoEnvironmentVariable := True;
+    DestinationPath := ExtractFilePath(ALogFile);
+    EnsureDirectoryExists(DestinationPath);
+    RotateFileCount := 5;    // will maintain a set of up to 5 files
+    RotateFileSizeKB := 1024;//20*1024; // rotate by 20 MB logs
+    RotateFileDailyAtHour := 0; //23;  rotate at 11:00 PM
   end;
 end;
 

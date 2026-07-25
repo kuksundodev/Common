@@ -15,7 +15,7 @@
 {                                                                             }
 { *************************************************************************** }
 
-unit IPTypes;
+unit UnitIPAddrVariantTypes;
 
 interface
 
@@ -221,6 +221,9 @@ type
     Reserved1, Reserved2, Reserved3: Word;
     VIPv4: TIPv4;
     Reserved4: LongWord;
+    {$IFDEF CPU64BITS}
+    Reserved5: Int64;
+    {$ENDIF}
   end;
 
   TIPv6VarData = packed record
@@ -228,6 +231,9 @@ type
     Reserved1, Reserved2, Reserved3: Word;
     VIPv6: TIPv6Object;
     Reserved4: LongWord;
+    {$IFDEF CPU64BITS}
+    Reserved5: LongWord;
+    {$ENDIF}
   end;
 
 function varIPv4: TVarType;

@@ -16,6 +16,7 @@ function MakeBase64ToUTF8(AStr: RawUTF8; AIsCompress: Boolean = True): RawUTF8;
 function MakeBase64ToRawByteString(AStr: RawUTF8; AIsCompress: Boolean = True): RawByteString;
 function GetBase64ByFileName(AFileName: RawUTF8; AIsCompress: Boolean = True): RawUTF8;
 function FileToBase64(const AFileName: RawUTF8): RawUTF8;
+function DecodeBase64ToString(const ABase64: string): string;
 
 implementation
 
@@ -105,6 +106,19 @@ begin
   finally
     f.Free;
   end;
+end;
+
+function DecodeBase64ToString(const ABase64: string): string;
+var
+  Encoded: RawUtf8;
+  Decoded: RawByteString;
+begin
+  Result := '';
+  Encoded := StringToUtf8(ABase64);
+
+  if Base64ToBinSafe(PAnsiChar(Pointer(Encoded)), Length(Encoded), Decoded) then
+    Result := Utf8ToString(RawUtf8(Decoded));
+//    raise Exception.Create('올바르지 않은 Base64 문자열입니다.');
 end;
 
 end.

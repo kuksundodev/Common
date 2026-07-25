@@ -7,7 +7,7 @@ uses System.SysUtils, UnitStringUtil,
 
 //AStr: YYYY-MM-DD
 function GetTimeLogFromStr(AStr: string): TTimeLog;
-function GetDateStrFromTimeLog(ATimeLog: TTimeLog): string;
+function GetDateStrFromTimeLog(ATimeLog: TTimeLog; AIncludeTime: Boolean=False): string;
 //AStr: 135984481601
 function GetTimeLogFromStrInt(AStr: string): TTimeLog;
 function GetDateTimeFromStrInt(AStr: string): TDateTime;
@@ -32,12 +32,16 @@ begin
   end;
 end;
 
-function GetDateStrFromTimeLog(ATimeLog: TTimeLog): string;
+function GetDateStrFromTimeLog(ATimeLog: TTimeLog; AIncludeTime: Boolean): string;
 var
   LDate: TDate;
 begin
   LDate := TimeLogToDateTime(ATimeLog);
-  Result := DateToStr(LDate);
+
+  if AIncludeTime then
+    Result := DateTimeToStr(LDate)
+  else
+    Result := DateToStr(LDate);
 end;
 
 // Helper to detect TDateTime type by name

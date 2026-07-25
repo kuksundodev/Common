@@ -24,6 +24,7 @@ function GetValidFileName(const AFileName: string): string;
 
 function Isx64PEImage(const AStream: TStream): Boolean; overload;
 function Isx64PEImage(const APEImageFileName: string): Boolean; overload;
+function GetProductVersionStr(const AFileName: string = ''): string;
 
 implementation
 
@@ -250,6 +251,36 @@ begin
 //  finally
 //    LPEImageStream.Free;
 //  end;
+end;
+
+function GetProductVersionStr(const AFileName: string = ''): string;
+var
+  FileName: string;
+  Size, Dummy: DWORD;
+  Buffer: TBytes;
+  pInfo: PVSFixedFileInfo;
+  Len: UINT;
+begin
+  Result := '0.0.0.0';
+
+  If AFileName = '' then
+    FileName := ParamStr(0)
+  else
+    FileName :=AFileName;
+
+  Size := GetFileVersionInfoSize(PChar(FileName), Dummy);
+  if Size = 0 then Exit;
+
+  SetLength(Buffer, Size);
+  if not GetFileVersionInfo(PChar(FileName), 0, Size, Buffer) then Exit;
+
+  if VerQueryValue(Buffer, '\', Pointer(pInfo), Len) then
+    Result := Format('%d.%d.%d.%d', [
+      HiWord(pInfo.dwProductVersionMS),
+      LoWord(pInfo.dwProductVersionMS),
+      HiWord(pInfo.dwProductVersionLS),
+      LoWord(pInfo.dwProductVersionLS)
+    ]);
 end;
 
 end.

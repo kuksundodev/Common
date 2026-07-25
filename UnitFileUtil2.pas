@@ -8,7 +8,7 @@ uses Winapi.Windows, System.Classes, System.SysUtils, System.DateUtils,
 {$IFDEF USE_ZIPMASTER}
   ZipMstr,
 {$ENDIF}
-  UnitFileInfoUtil;
+  UnitFileInfoUtil_mormot2;
 
 //AList : Full Path FileName List
 //결과값은 [{"Name": "", "Path": "", "Version": ""},...]
@@ -47,7 +47,7 @@ var
 begin
   Result := '';
 
-  i := GetFileVersionListByPJVerInfoFromList(AList);
+  i := TFileInfoUtil_Mormot.GetFileVersionListByPJVerInfoFromList(AList);
 
   if i <> -1 then
   begin

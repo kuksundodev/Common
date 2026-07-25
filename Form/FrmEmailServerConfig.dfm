@@ -2,7 +2,7 @@ object EmailServerConfigF: TEmailServerConfigF
   Left = 0
   Top = 0
   Caption = #51060#47700#51068' '#49436#48260' '#49444#51221
-  ClientHeight = 383
+  ClientHeight = 371
   ClientWidth = 520
   Color = clBtnFace
   Font.Charset = HANGEUL_CHARSET
@@ -14,7 +14,7 @@ object EmailServerConfigF: TEmailServerConfigF
   Position = poScreenCenter
   DesignSize = (
     520
-    383)
+    371)
   PixelsPerInch = 96
   TextHeight = 17
   object gbSMTP: TGroupBox
@@ -122,7 +122,7 @@ object EmailServerConfigF: TEmailServerConfigF
   end
   object btnSave: TButton
     Left = 304
-    Top = 316
+    Top = 304
     Width = 90
     Height = 32
     Anchors = [akLeft, akBottom]
@@ -131,22 +131,22 @@ object EmailServerConfigF: TEmailServerConfigF
     ModalResult = 1
     TabOrder = 2
     OnClick = btnSaveClick
-    ExplicitTop = 372
+    ExplicitTop = 316
   end
   object btnTest: TButton
     Left = 400
-    Top = 316
+    Top = 304
     Width = 104
     Height = 32
     Anchors = [akLeft, akBottom]
     Caption = #50672#44208' '#53580#49828#53944
     TabOrder = 3
     OnClick = btnTestClick
-    ExplicitTop = 372
+    ExplicitTop = 316
   end
   object btnClose: TButton
     Left = 16
-    Top = 316
+    Top = 304
     Width = 90
     Height = 32
     Anchors = [akLeft, akBottom]
@@ -154,6 +154,6 @@ object EmailServerConfigF: TEmailServerConfigF
     Caption = #45803#44592
     ModalResult = 8
     TabOrder = 4
-    ExplicitTop = 372
+    ExplicitTop = 316
   end
 end

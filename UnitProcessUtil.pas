@@ -681,60 +681,74 @@ var
   ProcessInfo: TProcessInformation;
   Buffer: array [0..255] of AnsiChar;
   BytesRead: DWORD;
-  AppRunning: DWORD;
+  ExitCode: DWORD;
   OutputLines: TStringList;
+  CommandLine: string;
 begin
+  Result := False;
+  AOutput.Clear;
   OutputLines := TStringList.Create;
+  ReadPipe := 0;
+  WritePipe := 0;
+  FillChar(ProcessInfo, SizeOf(ProcessInfo), 0);
+  try
+    FillChar(Security, SizeOf(Security), 0);
+    Security.nLength := SizeOf(TSecurityAttributes);
+    Security.bInheritHandle := True;
 
-  // 보안 속성 설정
-  Security.nLength := SizeOf(TSecurityAttributes);
-  Security.bInheritHandle := True;
-  Security.lpSecurityDescriptor := nil;
+    if not CreatePipe(ReadPipe, WritePipe, @Security, 0) then
+      raise Exception.Create('파이프 생성 실패');
 
-  // 파이프 생성
-  if not CreatePipe(ReadPipe, WritePipe, @Security, 0) then
-    raise Exception.Create('파이프 생성 실패');
+    ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
+    StartupInfo.cb := SizeOf(StartupInfo);
+    StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
+    StartupInfo.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
+    StartupInfo.hStdOutput := WritePipe;
+    StartupInfo.hStdError := WritePipe;
+    StartupInfo.wShowWindow := SW_HIDE;
 
-  // 시작 정보 설정
-  ZeroMemory(@StartupInfo, SizeOf(StartupInfo));
-  StartupInfo.cb := SizeOf(StartupInfo);
-  StartupInfo.dwFlags := STARTF_USESTDHANDLES or STARTF_USESHOWWINDOW;
-  StartupInfo.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
-  StartupInfo.hStdOutput := WritePipe;
-  StartupInfo.hStdError := WritePipe;
-  StartupInfo.wShowWindow := SW_HIDE;
+    // CreateProcess는 수정 가능한 명령행 버퍼를 요구한다.
+    CommandLine := ACommand;
+    if not CreateProcess(nil, PChar(CommandLine), nil, nil, True,
+      CREATE_NO_WINDOW, nil, nil, StartupInfo, ProcessInfo) then
+      raise Exception.CreateFmt(
+        '프로세스 실행 실패. ErrorCode=%d',
+        [GetLastError]
+      );
 
-  // 프로세스 실행
-  if not CreateProcess(nil, PChar(ACommand), nil, nil, True, CREATE_NO_WINDOW,
-    nil, nil, StartupInfo, ProcessInfo) then
-  begin
-    CloseHandle(ReadPipe);
     CloseHandle(WritePipe);
+    WritePipe := 0;
+
+    // 표준 출력과 표준 오류를 같은 파이프에서 읽는다.
+    repeat
+      BytesRead := 0;
+      if ReadFile(ReadPipe, Buffer, SizeOf(Buffer) - 1, BytesRead, nil) and
+         (BytesRead > 0) then
+      begin
+        Buffer[BytesRead] := #0;
+        OemToAnsi(Buffer, Buffer);
+        OutputLines.Text := OutputLines.Text + string(Buffer);
+      end;
+    until BytesRead = 0;
+
+    WaitForSingleObject(ProcessInfo.hProcess, INFINITE);
+    if not GetExitCodeProcess(ProcessInfo.hProcess, ExitCode) then
+      ExitCode := DWORD(-1);
+
+    OutputLines.Text := Trim(OutputLines.Text);
+    AOutput.Assign(OutputLines);
+    Result := ExitCode = 0;
+  finally
+    if WritePipe <> 0 then
+      CloseHandle(WritePipe);
+    if ReadPipe <> 0 then
+      CloseHandle(ReadPipe);
+    if ProcessInfo.hProcess <> 0 then
+      CloseHandle(ProcessInfo.hProcess);
+    if ProcessInfo.hThread <> 0 then
+      CloseHandle(ProcessInfo.hThread);
     OutputLines.Free;
-    raise Exception.Create('프로세스 실행 실패');
   end;
-
-  CloseHandle(WritePipe); // 쓰기 파이프 닫기
-
-  // 출력 읽기
-  repeat
-    BytesRead := 0;
-    if ReadFile(ReadPipe, Buffer, SizeOf(Buffer) - 1, BytesRead, nil) and (BytesRead > 0) then
-    begin
-      Buffer[BytesRead] := #0;
-      OutputLines.Text := OutputLines.Text + String(Buffer);
-    end;
-    GetExitCodeProcess(ProcessInfo.hProcess, AppRunning);
-  until (AppRunning <> STILL_ACTIVE) and (BytesRead = 0);
-
-  CloseHandle(ReadPipe);
-  CloseHandle(ProcessInfo.hProcess);
-  CloseHandle(ProcessInfo.hThread);
-
-  // 줄 단위로 나누기
-  OutputLines.Text := Trim(OutputLines.Text);
-  OutputLines.LineBreak := sLineBreak;
-  AOutput := OutputLines;
 end;
 
 end.
