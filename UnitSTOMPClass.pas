@@ -4,10 +4,10 @@ interface
 
 uses Winapi.Windows, System.SysUtils, System.Classes, System.SyncObjs,
   stompclient, StompTypes,
-  OtlComm, OtlCommon, UnitWorker4OmniMsgQ, UnitSTOMPMsg.Events;
+  OtlComm, OtlCommon, UnitWorker4OmniMsgQ;//, UnitSTOMPMsg.Events;
 
 type
-  TSTOMPMsgEventProc = procedure(AMsgEvent: TSTOMPMsgEvent) of object;
+//  TSTOMPMsgEventProc = procedure(AMsgEvent: TSTOMPMsgEvent) of object;
 
   TThreadReceiver4STOMP = class(TThread)
   private
@@ -53,7 +53,7 @@ type
     FThReceiver: TThreadReceiver4STOMP;
     FThSender: TThreadSender4STOMP;
     FpjhOmniMsgQClass: TpjhOmniMsgQClass;
-    FSTOMPMsgEventProc: TSTOMPMsgEventProc;
+//    FSTOMPMsgEventProc: TSTOMPMsgEventProc;
     FIsSubScribe: Boolean;
   public
     constructor Create(AUserId, APasswd, AHostIp: string; ATopic: TStrings;
@@ -73,7 +73,7 @@ type
     function GetResponseQMsg(var AMsg: TOmniMessage): Boolean;
     procedure AddTopic2List(ATopic: string); overload;
     procedure AddTopic2List(ATopicList: TStrings); overload;
-    procedure ProcessSTOMPMsg(AMsgEvent: TSTOMPMsgEvent);
+//    procedure ProcessSTOMPMsg(AMsgEvent: TSTOMPMsgEvent);
 
     property UserId: string read FuserId;
     property Passwd: string read FPasswd;
@@ -81,12 +81,12 @@ type
     property HostPort: string read FHostPort;
     property IsSubScribe: Boolean read FIsSubScribe;
     property TopicList: TStringList read FTopicList;
-    property OnSTOMPMsgEventProc : TSTOMPMsgEventProc read FSTOMPMsgEventProc write FSTOMPMsgEventProc;
+//    property OnSTOMPMsgEventProc : TSTOMPMsgEventProc read FSTOMPMsgEventProc write FSTOMPMsgEventProc;
   end;
 
 implementation
 
-uses UnitSTOMPMsg.EventThreads;
+//uses UnitSTOMPMsg.EventThreads;
 
 { TpjhSTOMPClass }
 
@@ -146,7 +146,7 @@ begin
 
   FThReceiver := nil;
   FpjhOmniMsgQClass := TpjhOmniMsgQClass.Create(1000, AHandle);
-  STOMPMsgEventThread.SetSTOMPMsgProc(ProcessSTOMPMsg);
+//  STOMPMsgEventThread.SetSTOMPMsgProc(ProcessSTOMPMsg);
   FIsSubScribe := AIsSubScribe;
 
   if AIsConnectNow then
@@ -212,11 +212,11 @@ begin
   Result := FThReceiver.FResponseQueue.TryDequeue(AMsg);
 end;
 
-procedure TpjhSTOMPClass.ProcessSTOMPMsg(AMsgEvent: TSTOMPMsgEvent);
-begin
-  if Assigned(OnSTOMPMsgEventProc) then
-    OnSTOMPMsgEventProc(AMsgEvent);
-end;
+//procedure TpjhSTOMPClass.ProcessSTOMPMsg(AMsgEvent: TSTOMPMsgEvent);
+//begin
+//  if Assigned(OnSTOMPMsgEventProc) then
+//    OnSTOMPMsgEventProc(AMsgEvent);
+//end;
 
 procedure TpjhSTOMPClass.SetFormHandle(AHandle: THandle);
 begin
@@ -262,19 +262,19 @@ begin
         .Add(TStompHeaders.NewPersistentHeader(true))
         );
 
-    TSTOMPMsgEvent.Create(ATopic, 'StompSendMsg => ' + AMsg).Queue;
+//    TSTOMPMsgEvent.Create(ATopic, 'StompSendMsg => ' + AMsg).Queue;
   end;
 end;
 
 procedure TpjhSTOMPClass.StompSendMsgThread(AMsg, ATopic: string);
 var
-  LRec: TCommandMsgRecord;
+//  LRec: TCommandMsgRecord;
   LOmniValue: TOmniValue;
 begin
-  LRec.FMessage := AMsg;
-  LRec.FTopic := ATopic;
-  LOmniValue := TOmniValue.FromRecord<TCommandMsgRecord>(LRec);
-  FpjhOmniMsgQClass.FSendMsgQueue.Enqueue(TOmniMessage.Create(1, LOmniValue));
+//  LRec.FMessage := AMsg;
+//  LRec.FTopic := ATopic;
+//  LOmniValue := TOmniValue.FromRecord<TCommandMsgRecord>(LRec);
+//  FpjhOmniMsgQClass.FSendMsgQueue.Enqueue(TOmniMessage.Create(1, LOmniValue));
 end;
 
 procedure TpjhSTOMPClass.StopWorker;
