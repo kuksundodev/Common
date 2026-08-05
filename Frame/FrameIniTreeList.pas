@@ -29,12 +29,11 @@ type
 
     procedure OnSearchEditChange(Sender : TObject; Handle : Integer;
             Interval : Cardinal; ElapsedTime : LongInt);
-
-    function GetNodeFromSelected(): TTreeNode;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure SearchAndFocusItemsFromTxt();
+    function GetNodeFromSelected(): TTreeNode;
   end;
 
 implementation
@@ -110,7 +109,7 @@ begin
   if LNthSrch < FNthStart then
   begin
     FnthStart := 1;
-    ShowMessage('´õ ÀÌ»ó ¾ø½À´Ï´Ù.');
+    ShowMessage('ï¿½ï¿½ ï¿½Ì»ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.');
   end
   else
     Inc(FNthStart);
